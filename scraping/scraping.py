@@ -6,7 +6,7 @@ import shutil # to save it locally
 from datetime import datetime
 
 listAllPics = []
-flower = "Enziane"
+flower = "Margeriten"
 def write_csv():
     data_file = open('D:/coding/BMA/scraping/test.csv', 'w', newline='', encoding="utf-8")
     csv_writer = csv.writer(data_file)
