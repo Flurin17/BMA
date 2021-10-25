@@ -6,7 +6,7 @@ import shutil # to save it locally
 from datetime import datetime
 
 listAllPics = []
-flower = "Margeriten"
+flower = "Leontopodium_nivale"
 def write_csv():
     data_file = open('D:/coding/BMA/scraping/test.csv', 'w', newline='', encoding="utf-8")
     csv_writer = csv.writer(data_file)
@@ -23,7 +23,7 @@ def write_csv():
 
 def searchStuff(searchTerm):
     start = 0
-    for _ in range(4):
+    for _ in range(5):
         params = {
         "api_key": "9aac5b3edec5d85d0e320b3f05f3bdc0115ca578d72c12b83265238c35cd67dd",
         "engine": "google",
@@ -52,7 +52,7 @@ def downloadPicture(image_Infos):
     image_url = image_Infos["original"]
     print(image_Infos)
 
-    filename = image_url.split("/")[-1].lower().split("?")[0]
+    filename = image_url.split("/")[-1].lower().split("?")[0][:25]
     if ".jpg" not in filename:
         filename = filename + ".jpg"
 
