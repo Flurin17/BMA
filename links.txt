@@ -2,7 +2,7 @@ Scraping
 https://github.com/serpapi/google-search-results-python, 25.10 09:07
 https://pypi.org/project/google-search-results/, 25.10 09:08
 https://towardsdatascience.com/how-to-download-an-image-using-python-38a75cfa21c, 25.10 09:37
-
+https://www.programiz.com/python-programming/datetime/strftime, 25.10 10:48
 
 Bild Rechte
 https://www.saferinternet.at/news-detail/creative-commons-inhalte-richtig-verwenden/, 25.10 09:31
