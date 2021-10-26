@@ -4,5 +4,13 @@ https://pypi.org/project/google-search-results/, 25.10 09:08
 https://towardsdatascience.com/how-to-download-an-image-using-python-38a75cfa21c, 25.10 09:37
 https://www.programiz.com/python-programming/datetime/strftime, 25.10 10:48
 
+https://pynative.com/python-generate-random-string/, 26.10 08:40
+
 Bild Rechte
 https://www.saferinternet.at/news-detail/creative-commons-inhalte-richtig-verwenden/, 25.10 09:31
+
+
+https://valohai.com/blog/copyright-laws-and-machine-learning/, 26.10 09:19
+https://datainnovation.org/2019/10/copyright-law-should-not-restrict-ai-systems-from-using-public-data/, 26.10 09:21
+https://www.technollama.co.uk/using-creative-commons-images-to-train-artificial-intelligence, 26.10 09:22
+https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2254481, 26.10 09:22

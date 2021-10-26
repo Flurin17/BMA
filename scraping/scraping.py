@@ -4,9 +4,17 @@ import csv
 import requests # to get image from the web
 import shutil # to save it locally
 from datetime import datetime
+import random
+import string
+
+def get_random_string(length):
+    # choose from all lowercase letter
+    letters = string.ascii_lowercase
+    result_str = ''.join(random.choice(letters) for i in range(length))
+    return result_str
 
 listAllPics = []
-flower = "Leontopodium_nivale"
+flower = "Rhododendron"
 def write_csv():
     data_file = open('D:/coding/BMA/scraping/test.csv', 'w', newline='', encoding="utf-8")
     csv_writer = csv.writer(data_file)
@@ -23,43 +31,42 @@ def write_csv():
 
 def searchStuff(searchTerm):
     start = 0
-    for _ in range(5):
+    for _ in range(8):
         params = {
         "api_key": "9aac5b3edec5d85d0e320b3f05f3bdc0115ca578d72c12b83265238c35cd67dd",
         "engine": "google",
         "q": searchTerm,
-        "location": "Switzerland",
         "google_domain": "google.com",
-        "gl": "ch",
         "ijn": str(start),
         "num": "100",
         "tbm": "isch",
+        "tbs": "il:cl"
         }
         search = GoogleSearch(params)
-        start = start + 1
-        print(start)
         results = search.get_dict()
         pictureResults = results["images_results"]
         for image in pictureResults:
-            now = datetime.now() # current date and time
-            date_time = now.strftime("%d/%m/%Y, %H:%M:%S")
-            image["time"] = date_time
+            image["filename"] = get_random_string(12)
+            image["time"] = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
             listAllPics.append(image)
             downloadPicture(image)
+        
+        start = start + 1
+        print(start)
     write_csv()
 
 def downloadPicture(image_Infos):
     image_url = image_Infos["original"]
-    print(image_Infos)
+    print(image_url)
 
-    filename = image_url.split("/")[-1].lower().split("?")[0][:25]
+    filename = image_Infos["filename"]
     if ".jpg" not in filename:
         filename = filename + ".jpg"
 
     fileLocation = "D:/coding/BMA/pictures/" + flower + "/" + filename
     # Open the url image, set stream to True, this will return the stream content.
     try:
-        r = requests.get(image_url, stream = True, 
+        r = requests.get(image_url, stream = True, timeout=20,
             headers={
                 "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
                 "accept-encoding": "gzip, deflate, br",
