@@ -7,6 +7,11 @@ import numpy as np
 import PIL
 from PIL import Image
 
+#TODO
+#disable tensorflow errors and warnings (does not work yet)
+tf.get_logger().setLevel('FATAL')
+tf.autograph.set_verbosity(0)
+
 print("\n\nNeural Network Utility\n----------------------\n")
 print("TensorFlow version:", tf.__version__)
 print("Numpy version:", np.__version__)
@@ -16,7 +21,7 @@ print("Pillow version:", PIL.__version__, "\n")
 def getImageFeatureFromPath(imagePath):
     image = Image.open(imagePath)
     data = np.asarray(image)
-    data[2] = data[2] / 255
+    data[2] = data[2] / 255 #normalize values
 
     x = data.shape[0]
     y = data.shape[1]
@@ -40,6 +45,7 @@ def load_dataset():
     totalClassNames = list(set(trainClassNames + testClassNames))
     classDictionary = {}
     
+    #TODO: option to just load dataset instead of reload everythings
     #reset datasets by recreating dataset file
     if os.path.exists("dataset.h5py"):
         os.remove("dataset.h5py")
@@ -88,30 +94,14 @@ def make_or_restore_model():
         print("Restoring from", latest_checkpoint, "...")
         return keras.models.load_model(latest_checkpoint)
     print("Creating a new model...")
-    #m = keras.models.Sequential([
-    #    layers.Flatten(input_shape=(64, 64, 3)),
-    #    layers.Dense(256, activation='relu'),
-    #    layers.Dropout(0.2),
-    #    layers.Dense(len(classDictionary))
-    #])
     m = keras.Sequential([
         layers.Flatten(input_shape=(64, 64, 3)),
-        layers.Dense(256, activation='relu'),
+        layers.Dense(512, activation='relu'),
         layers.Dense(len(classDictionary))
     ])
 
-    #lr_schedule = keras.optimizers.schedules.ExponentialDecay(
-    #    initial_learning_rate=0.01, decay_steps=100000, decay_rate=0.96, staircase=True
-    #)*/
-
-
-    #m.compile(
-    #    optimizer=keras.optimizers.RMSprop(learning_rate=1e-3),
-    #    loss=keras.losses.SparseCategoricalCrossentropy(),
-    #    metrics=[keras.metrics.SparseCategoricalAccuracy()]
-    #)
     m.compile(
-        optimizer='adam',
+        optimizer=keras.optimizers.RMSprop(learning_rate=1e-7),
         loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=['accuracy'])
     return m
@@ -125,57 +115,45 @@ model = make_or_restore_model()
 print("\nModel summary:\n")
 model.summary()
 
-print("\nBeginning to train model...\n")
-#history = model.fit(train_set_x, train_set_y, epochs=10, callbacks=[keras.callbacks.ModelCheckpoint(filepath="checkpoints/model-loss={loss:.3f}", save_best_only=True, monitor="loss", verbose=1, save_freq="epoch")], shuffle=False) # also try shuffle=batch
-model.fit(train_set_x, train_set_y, epochs=10, callbacks=[keras.callbacks.ModelCheckpoint(filepath="checkpoints/model-loss={loss:.3f}", save_best_only=True, monitor="loss", verbose=1, save_freq="epoch")], shuffle=False)
+#TODO ask user
+epochs = 2
+steps_per_epoch = 5
+
+print("\nBeginning to train model...\n")#TODO progress logging (to csv?)
+model.fit(train_set_x, train_set_y, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=[keras.callbacks.ModelCheckpoint(filepath="checkpoints/model-loss={loss:.3f}", save_best_only=True, monitor="loss", verbose=0, save_freq="epoch")], shuffle='batch')
 print("\nFinished training model.\n")
 
-print("\nEvaluating model...\n")
-test_loss, test_acc = model.evaluate(test_set_x, test_set_y, verbose=2)
+print("Evaluating model...")
+test_loss, test_acc = model.evaluate(test_set_x, test_set_y, verbose=0)
+del model
 
-print("\nResults:\n")
+print("\nResults:")
 
 print("Loss:", test_loss)
 print("Accuracy:", test_acc)
 
-
-print("\nPredicting on some test images:\n")
+print("\nCreating probability model...")
 probability_model = keras.Sequential([
-    model,
+    make_or_restore_model(),
     layers.Softmax()
 ])
+
+print("\nModel summary:\n")
+probability_model.summary()
+
+print("\nPredicting on some test images:\n")
 predictions = probability_model.predict(test_set_x)
 
-index = 0
-for prediction in predictions:
-    first = np.argmax(prediction)
-    firstName = list(classDictionary.keys())[list(classDictionary.values()).index(first)]
-    firstProbability = prediction[first]
-    prediction = np.delete(prediction, first)
-    secondProbability = 0
-    thirdProbability = 0
-    second = np.argmax(prediction)
-    secondName = list(classDictionary.keys())[list(classDictionary.values()).index(second)]
-    secondProbability = prediction[second]
-    prediction = np.delete(prediction, second)
-    third = np.argmax(prediction)
-    thirdName = list(classDictionary.keys())[list(classDictionary.values()).index(third)]
-    thirdProbability = prediction[third]
-    prediction = np.delete(prediction, third)
-    fourth = np.argmax(prediction)
-    fourthName = list(classDictionary.keys())[list(classDictionary.values()).index(fourth)]
-    fourthProbability = prediction[fourth]
-    prediction = np.delete(prediction, fourth)
+for i, prediction in enumerate(predictions):
+    print("Actual: \"" + list(classDictionary.keys())[list(classDictionary.values()).index(test_set_y[i])] + "\"")
+    orderedPrediction = []
+    for l, p in enumerate(prediction):
+        orderedPrediction.append([l, round(p * 100, 3)])
+    orderedPrediction = np.array(orderedPrediction)
+    ind = np.argsort(orderedPrediction[:,1]); orderedPrediction = orderedPrediction[ind][::-1]
+    for j, p in enumerate(orderedPrediction):
+        name = list(classDictionary.keys())[list(classDictionary.values()).index(p[0])]
+        if p[1] != 0:
+            print("  " + str(j + 1) + ". \"" + name + "\" (" + str(p[1]) + "%)")
 
-    print("Actual: \"" + list(classDictionary.keys())[list(classDictionary.values()).index(test_set_y[index])] + "\"")
-    print("  1. \"" + firstName + "\" (" + str(round(firstProbability * 100, 3)) + "%)")
-    if secondProbability != 0:
-        print("  2. \"" + secondName + "\" (" + str(round(secondProbability * 100, 3)) + "%)")
-    if thirdProbability != 0:
-        print("  3. \"" + thirdName + "\" (" + str(round(thirdProbability * 100, 3)) + "%)")
-    if fourthProbability != 0:
-        print("  4. \"" + fourthName + "\" (" + str(round(fourthProbability * 100, 3)) + "%)")
-    print("")
-    index += 1
-
-del model
+del probability_model
