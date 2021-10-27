@@ -14,9 +14,9 @@ def get_random_string(length):
     return result_str
 
 listAllPics = []
-flower = "Rhododendron"
+flower = "Leontopodium_nivale"
 def write_csv():
-    data_file = open('D:/coding/BMA/scraping/test.csv', 'w', newline='', encoding="utf-8")
+    data_file = open('L:/Coding/BMA/Leontopodium_nivale_2.csv', 'w', newline='', encoding="utf-8")
     csv_writer = csv.writer(data_file)
     
     count = 0
@@ -31,7 +31,7 @@ def write_csv():
 
 def searchStuff(searchTerm):
     start = 0
-    for _ in range(8):
+    for _ in range(6):
         params = {
         "api_key": "9aac5b3edec5d85d0e320b3f05f3bdc0115ca578d72c12b83265238c35cd67dd",
         "engine": "google",
@@ -63,7 +63,7 @@ def downloadPicture(image_Infos):
     if ".jpg" not in filename:
         filename = filename + ".jpg"
 
-    fileLocation = "D:/coding/BMA/pictures/" + flower + "/" + filename
+    fileLocation = "L:/Coding/BMA/pictures/" + flower + "/" + filename
     # Open the url image, set stream to True, this will return the stream content.
     try:
         r = requests.get(image_url, stream = True, timeout=20,
