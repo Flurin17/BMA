@@ -7,16 +7,13 @@ import numpy as np
 import PIL
 from PIL import Image
 
-#TODO
-#disable tensorflow errors and warnings (does not work yet)
-tf.get_logger().setLevel('FATAL')
-tf.autograph.set_verbosity(0)
-
 print("\n\nNeural Network Utility\n----------------------\n")
 print("TensorFlow version:", tf.__version__)
 print("Numpy version:", np.__version__)
 print("H5py version:", h5py.__version__)
 print("Pillow version:", PIL.__version__, "\n")
+
+print("All tensorflow warnings below can be ignored as they are irelevant to the execution of this program\n")
 
 def getImageFeatureFromPath(imagePath):
     image = Image.open(imagePath)
@@ -116,8 +113,8 @@ print("\nModel summary:\n")
 model.summary()
 
 #TODO ask user
-epochs = 2
-steps_per_epoch = 5
+epochs = 25
+steps_per_epoch = 2000
 
 print("\nBeginning to train model...\n")#TODO progress logging (to csv?)
 model.fit(train_set_x, train_set_y, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=[keras.callbacks.ModelCheckpoint(filepath="checkpoints/model-loss={loss:.3f}", save_best_only=True, monitor="loss", verbose=0, save_freq="epoch")], shuffle='batch')
