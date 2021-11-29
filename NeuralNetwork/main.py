@@ -8,7 +8,10 @@ import numpy as np
 import PIL
 from PIL import Image
 import matplotlib.pyplot as plt
-assetPath = 'L:/Coding/BMA/NeuralNetwork/'
+from PyInstaller.utils.hooks import collect_submodules
+
+assetPath = os.getcwd() + "\\NeuralNetwork\\"
+print(assetPath)
 print("\n\nNeural Network Utility\n----------------------\n")
 print("TensorFlow version:", tf.__version__)
 print("Numpy version:", np.__version__)
