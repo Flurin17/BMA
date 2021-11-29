@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 
 neuralNetworkPath = os.getcwd() + "\\NeuralNetwork\\"
 
+if not os.path.exists(neuralNetworkPath + "checkpoints"):
+    os.mkdir(neuralNetworkPath + "checkpoints")
+
 print("\n\nNeural Network Utility\n----------------------\n")
 print("TensorFlow version:", tf.__version__)
 print("Numpy version:", np.__version__)
@@ -45,6 +48,14 @@ def load_dataset():
     assetPath = neuralNetworkPath + "assets\\"
     trainPath = assetPath + "train\\"
     testPath = assetPath + "test\\"
+
+    if not os.path.exists(assetPath):
+        os.mkdir(assetPath)
+    if not os.path.exists(trainPath):
+        os.mkdir(trainPath)
+    if not os.path.exists(testPath):
+        os.mkdir(testPath)
+
     trainClassNames = os.listdir(trainPath)
     testClassNames = os.listdir(testPath)
     totalClassNames = list(set(trainClassNames + testClassNames))
