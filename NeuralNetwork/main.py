@@ -8,7 +8,6 @@ import numpy as np
 import PIL
 from PIL import Image
 import matplotlib.pyplot as plt
-from PyInstaller.utils.hooks import collect_submodules
 
 assetPath = os.getcwd() + "\\NeuralNetwork\\"
 print(assetPath)
@@ -43,7 +42,7 @@ def getImageFeatureFromPath(imagePath):
     return data
 
 def load_dataset():
-    assetPath = 'L:/Coding/BMA/NeuralNetwork/assets/'
+    assetPath = os.getcwd() + "\\NeuralNetwork\\assets\\"
     trainPath = assetPath + "train/"
     testPath = assetPath + "test/"
     trainClassNames = os.listdir(trainPath)
@@ -127,7 +126,7 @@ def load_dataset():
     return train_set_x, train_set_y, test_set_x, test_set_y, classDictionary
 
 def make_or_restore_model(inpt):
-    checkpoints = ["checkpoints/" + name for name in os.listdir(f"{assetPath}checkpoints")]
+    checkpoints = ["checkpoints/" + name for name in os.listdir(f"{assetPath}\\checkpoints")]
     if checkpoints and (inpt == "n" or inpt == "N"):
         latest_checkpoint = max(checkpoints, key=os.path.getctime)
         print("Restoring model from", latest_checkpoint, "...\n")
@@ -221,7 +220,7 @@ if inpt == "1":
     print("\nBeginning to train model...\n")
 
 
-    history = model.fit(train_set_x, train_set_y, epochs=epochs, shuffle='batch')
+    history = model.fit(train_set_x, train_set_y, epochs=epochs, shuffle='batch', steps_per_epoch=50)
     print("\nFinished training model.\n")
     #model.save("checkpoints/model")
 
@@ -235,79 +234,80 @@ if inpt == "1":
     loss = history.history['loss']
 
     epochs_range = range(epochs)
+    try:
+        plt.figure(figsize=(8, 8))
+        plt.subplot(1, 2, 1)
+        plt.plot(epochs_range, acc, label='Training Accuracy')
+        plt.legend(loc='lower right')
+        plt.title('Training Accuracy')
 
-    plt.figure(figsize=(8, 8))
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs_range, acc, label='Training Accuracy')
-    plt.legend(loc='lower right')
-    plt.title('Training Accuracy')
+        plt.subplot(1, 2, 2)
+        plt.plot(epochs_range, loss, label='Training Loss')
+        plt.legend(loc='upper right')
+        plt.title('Training Loss')
+        plt.show()
+    except:
+        print("Plotting failed.")
 
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs_range, loss, label='Training Loss')
-    plt.legend(loc='upper right')
-    plt.title('Training Loss')
-    plt.show()
+    while True:
+        print("\nCreating probability (testing) model...")
+        probability_model = keras.Sequential([
+            model,
+            layers.Softmax()
+        ])
 
+        print("\nModel summary:\n")
+        probability_model.summary()
+        inpt = ""
+        while inpt != "1" and inpt != "2":
+            inpt = input("\nDo you want to (1) test on images from the \"assets/test\" folder or (2) manually enter paths to images you want to test? [1/2]: ")
 
-    print("\nCreating probability (testing) model...")
-    probability_model = keras.Sequential([
-        model,
-        layers.Softmax()
-    ])
+        if(inpt == "1"):
+            print("\nPredicting on \"asset/test\" images:\n")
+            predict(probability_model, test_set_x, test_set_y)
+        else:
+            print("")
+            exitP = False
+            while not exitP:
+                inpt = ""
+                while inpt != "1" and inpt != "2":
+                    inpt = input("Do you want to (1) test another image or (2) exit the program? [1/2]: ")
 
-    print("\nModel summary:\n")
-    probability_model.summary()
+                if(inpt == "2"):
+                    exitP = True
+                else:
+                    path = input("\nPath to image (not all images are supported and work): ")
+                    print("")
 
-    inpt = ""
-    while inpt != "1" and inpt != "2":
-        inpt = input("\nDo you want to (1) test on images from the \"assets/test\" folder or (2) manually enter paths to images you want to test? [1/2]: ")
+                    open("temp.h5py", 'a').close()
+                    f2 = h5py.File("temp.h5py", "r+")
 
-    if(inpt == "1"):
-        print("\nPredicting on \"asset/test\" images:\n")
-        predict(probability_model, test_set_x, test_set_y)
-    else:
-        print("")
-        exitP = False
-        while not exitP:
-            inpt = ""
-            while inpt != "1" and inpt != "2":
-                inpt = input("Do you want to (1) test another image or (2) exit the program? [1/2]: ")
+                    if(os.path.exists(path)):
+                        try:
+                            image = getImageFeatureFromPath(path)
+                            
+                            if(image.shape == (64, 64, 3)):
+                                print("\nPredicting on \"" + path + "\" image:\n")
 
-            if(inpt == "2"):
-                exitP = True
-            else:
-                path = input("\nPath to image (not all images are supported and work): ")
+                                xSet = f2.create_dataset(name="x", shape=(0, 64, 64, 3), maxshape=(None, 64, 64, 3), dtype='i8', chunks=True, compression="gzip", compression_opts=1)
+                                xSet.resize((1, 64, 64, 3))
+                                xSet[0] = image
+
+                                predict(probability_model, xSet, path, False)
+                            else:
+                                print("Could not process image with path \"" + path + "\".")
+                        except Exception:
+                            print("\nCould not load or process image with path \"" + path + "\".")
+                    else:
+                        print("File with path \"" + path + "\" does not exist.")
+
+                    f2.close()
+                    if(os.path.exists("temp.h5py")):
+                        os.remove("temp.h5py")
+
                 print("")
 
-                open("temp.h5py", 'a').close()
-                f2 = h5py.File("temp.h5py", "r+")
-
-                if(os.path.exists(path)):
-                    try:
-                        image = getImageFeatureFromPath(path)
-                        
-                        if(image.shape == (64, 64, 3)):
-                            print("\nPredicting on \"" + path + "\" image:\n")
-
-                            xSet = f2.create_dataset(name="x", shape=(0, 64, 64, 3), maxshape=(None, 64, 64, 3), dtype='i8', chunks=True, compression="gzip", compression_opts=1)
-                            xSet.resize((1, 64, 64, 3))
-                            xSet[0] = image
-
-                            predict(probability_model, xSet, path, False)
-                        else:
-                            print("Could not process image with path \"" + path + "\".")
-                    except Exception:
-                        print("\nCould not load or process image with path \"" + path + "\".")
-                else:
-                    print("File with path \"" + path + "\" does not exist.")
-
-                f2.close()
-                if(os.path.exists("temp.h5py")):
-                    os.remove("temp.h5py")
-
-            print("")
-
-    del probability_model
-    del model
+        del probability_model
+        del model
 
 print("Program ran to completion.")
