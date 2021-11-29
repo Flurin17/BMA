@@ -7,7 +7,8 @@ import h5py
 import numpy as np
 import PIL
 from PIL import Image
-
+import matplotlib.pyplot as plt
+assetPath = 'L:/Coding/BMA/NeuralNetwork/'
 print("\n\nNeural Network Utility\n----------------------\n")
 print("TensorFlow version:", tf.__version__)
 print("Numpy version:", np.__version__)
@@ -35,11 +36,11 @@ def getImageFeatureFromPath(imagePath):
         data = data[0:, y-x:]
 
     data = np.asarray(Image.fromarray(data).resize((64, 64)))
-    print("Loading asset: \"" + imagePath + "\" with resolution:", data.shape)
+    print("Loaded asset: \"" + imagePath + "\" with resolution:", data.shape)
     return data
 
 def load_dataset():
-    assetPath = "assets/"
+    assetPath = 'L:/Coding/BMA/NeuralNetwork/assets/'
     trainPath = assetPath + "train/"
     testPath = assetPath + "test/"
     trainClassNames = os.listdir(trainPath)
@@ -100,13 +101,13 @@ def load_dataset():
                 test_set_y[index] = classDictionary[testClassName]
                 index += 1
 
-        #repeat dataset until it contains around 10000 elements
+        #repeat dataset until it contains around 1000 elements
         lenght = len(train_set_x)
-        if(lenght < 10000):
-            train_set_x.resize((10000, 64, 64, 3))
-            train_set_y.resize((10000,))
+        if(lenght < 1000):
+            train_set_x.resize((1000, 64, 64, 3))
+            train_set_y.resize((1000,))
 
-            repeatCount = int(10000 / lenght)
+            repeatCount = int(1000 / lenght)
 
             tf.repeat(train_set_x, repeatCount, axis=0)
             tf.repeat(train_set_y, repeatCount, axis=0)
@@ -123,22 +124,42 @@ def load_dataset():
     return train_set_x, train_set_y, test_set_x, test_set_y, classDictionary
 
 def make_or_restore_model(inpt):
-    checkpoints = ["checkpoints/" + name for name in os.listdir("checkpoints")]
+    checkpoints = ["checkpoints/" + name for name in os.listdir(f"{assetPath}checkpoints")]
     if checkpoints and (inpt == "n" or inpt == "N"):
         latest_checkpoint = max(checkpoints, key=os.path.getctime)
         print("Restoring model from", latest_checkpoint, "...\n")
         return keras.models.load_model(latest_checkpoint)
     print("Creating a new model...\n")
-    m = keras.Sequential([
-        layers.Flatten(input_shape=(64, 64, 3)),
-        layers.Dense(512, activation='relu'),
-        layers.Dense(len(classDictionary))
-    ])
 
-    m.compile(
-        optimizer=keras.optimizers.RMSprop(learning_rate=1e-7),
-        loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=['accuracy'])
+    data_augmentation = keras.Sequential(
+    [
+        layers.RandomFlip("horizontal",
+                        input_shape=(64,
+                                    64,
+                                    3)),
+        layers.RandomRotation(0.1),
+        layers.RandomZoom(0.1),
+    ]
+    )
+
+    m = keras.Sequential([
+        data_augmentation,
+        layers.Rescaling(1./255),
+        layers.Conv2D(16, 3, padding='same', activation='relu'),
+        layers.MaxPooling2D(),
+        layers.Conv2D(32, 3, padding='same', activation='relu'),
+        layers.MaxPooling2D(),
+        layers.Conv2D(64, 3, padding='same', activation='relu'),
+        layers.MaxPooling2D(),
+        layers.Dropout(0.2),
+        layers.Flatten(),
+        layers.Dense(128, activation='relu'),
+        layers.Dense(len(classDictionary))
+        ])
+
+    m.compile(optimizer="adam",
+                loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                metrics=['accuracy'])
     return m
 
 def predict(probability_model, testSetX, testSetY, yIsSet = True):
@@ -193,22 +214,38 @@ if inpt == "1":
         epochInpt = input("Epoch count [1 - 500]: ")
     epochs = int(epochInpt)
 
-    stepsEpochInpt = ""
-    while (not intTryParse(stepsEpochInpt)[1]) or int(stepsEpochInpt) < 10 or int(stepsEpochInpt) > 2000:
-        stepsEpochInpt = input("Steps per epoch [10 - 2000]: ")
-    steps_per_epoch = int(stepsEpochInpt)
 
     print("\nBeginning to train model...\n")
-    model.fit(train_set_x, train_set_y, epochs=epochs, steps_per_epoch=steps_per_epoch, callbacks=[keras.callbacks.ModelCheckpoint(filepath="checkpoints/model-loss={loss:.3f}", save_best_only=True, monitor="loss", verbose=0, save_freq="epoch"), keras.callbacks.CSVLogger("trainingLog_" + str(int(datetime.datetime.now().timestamp())), ',', True)], shuffle='batch')
+
+
+    history = model.fit(train_set_x, train_set_y, epochs=epochs, shuffle='batch')
     print("\nFinished training model.\n")
+    #model.save("checkpoints/model")
 
     print("Evaluating model...")
     test_loss, test_acc = model.evaluate(test_set_x, test_set_y, verbose=0)
     print("\nResults:")
     print("Loss:", test_loss)
     print("Accuracy:", test_acc, "\n")
-    del model
-else:
+    acc = history.history['accuracy']
+
+    loss = history.history['loss']
+
+    epochs_range = range(epochs)
+
+    plt.figure(figsize=(8, 8))
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, acc, label='Training Accuracy')
+    plt.legend(loc='lower right')
+    plt.title('Training Accuracy')
+
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, loss, label='Training Loss')
+    plt.legend(loc='upper right')
+    plt.title('Training Loss')
+    plt.show()
+
+
     print("\nCreating probability (testing) model...")
     probability_model = keras.Sequential([
         model,
